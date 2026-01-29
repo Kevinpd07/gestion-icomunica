@@ -1,103 +1,218 @@
-import Image from "next/image";
+"use client"
 
-export default function Home() {
+import { useState } from "react"
+import { Sidebar } from "@/components/dashboard/sidebar"
+import { Header } from "@/components/dashboard/header"
+import { QuotaCard } from "@/components/dashboard/quota-card"
+import { UsersTable, type User } from "@/components/dashboard/users-table"
+import { StatsCards } from "@/components/dashboard/stats-cards"
+
+// Sample data
+const sampleUsers: User[] = [
+  {
+    id: 2,
+    nombre: "Jorge García Pérez",
+    usuario: "jorge",
+    organismo: "CECM",
+    estado: "ACTIVO",
+  },
+  {
+    id: 3,
+    nombre: "Miguel Díaz-Canel Bermúdez",
+    usuario: "midica",
+    organismo: "Presidencia",
+    estado: "ACTIVO",
+  },
+  {
+    id: 4,
+    nombre: "Manuel Marrero Cruz",
+    usuario: "mmarrero",
+    organismo: "CECM",
+    estado: "ACTIVO",
+  },
+  {
+    id: 6,
+    nombre: "Salvador Valdés Mesa",
+    usuario: "salvador",
+    organismo: "CECM",
+    estado: "ACTIVO",
+  },
+  {
+    id: 7,
+    nombre: "Roberto Morales Ojeda",
+    usuario: "rmorales",
+    organismo: "ANPP",
+    estado: "ACTIVO",
+  },
+  {
+    id: 8,
+    nombre: "Ana María Hernández",
+    usuario: "ahernandez",
+    organismo: "MINCOM",
+    estado: "INACTIVO",
+  },
+  {
+    id: 9,
+    nombre: "Carlos López Fernández",
+    usuario: "clopez",
+    organismo: "MINREX",
+    estado: "ACTIVO",
+  },
+  {
+    id: 10,
+    nombre: "María Elena Rodríguez",
+    usuario: "mrodriguez",
+    organismo: "MINSAP",
+    estado: "PENDIENTE",
+  },
+  {
+    id: 11,
+    nombre: "José Antonio Martínez",
+    usuario: "jmartinez",
+    organismo: "MINED",
+    estado: "ACTIVO",
+  },
+  {
+    id: 12,
+    nombre: "Laura Sánchez Vega",
+    usuario: "lsanchez",
+    organismo: "CITMA",
+    estado: "ACTIVO",
+  },
+  {
+    id: 13,
+    nombre: "Pedro González Ruiz",
+    usuario: "pgonzalez",
+    organismo: "MINAG",
+    estado: "INACTIVO",
+  },
+  {
+    id: 14,
+    nombre: "Carmen Torres Díaz",
+    usuario: "ctorres",
+    organismo: "MINCEX",
+    estado: "ACTIVO",
+  },
+]
+
+export default function DashboardPage() {
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
+
+  const handleEdit = (user: User) => {
+    console.log("[v0] Edit user:", user)
+  }
+
+  const handleDelete = (user: User) => {
+    console.log("[v0] Delete user:", user)
+  }
+
+  const handleManage = (user: User) => {
+    console.log("[v0] Manage user:", user)
+  }
+
+  const handleExport = (user: User) => {
+    console.log("[v0] Export user:", user)
+  }
+
+  // Calculate stats
+  const totalUsers = sampleUsers.length
+  const activeUsers = sampleUsers.filter((u) => u.estado === "ACTIVO").length
+  const inactiveUsers = sampleUsers.filter((u) => u.estado === "INACTIVO").length
+  const organismos = [...new Set(sampleUsers.map((u) => u.organismo))].length
+
   return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm/6 text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-[family-name:var(--font-geist-mono)] font-semibold">
-              app/page.tsx
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
+    <div className="min-h-screen bg-background">
+      <Sidebar
+        isMobileOpen={isMobileMenuOpen}
+        onMobileClose={() => setIsMobileMenuOpen(false)}
+      />
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
+      <div className="lg:pl-64">
+        <Header
+          title="Gestión de Usuarios"
+          subtitle="Plataforma InfoComunica"
+          onMenuClick={() => setIsMobileMenuOpen(true)}
+        />
+
+        <main className="p-4 lg:p-6">
+          <div className="mx-auto max-w-7xl space-y-6">
+            {/* Stats Overview */}
+            <StatsCards
+              totalUsers={totalUsers}
+              activeUsers={activeUsers}
+              inactiveUsers={inactiveUsers}
+              totalOrganismos={organismos}
             />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
-        </div>
-      </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
+
+            {/* Quota Card */}
+            <div className="grid gap-6 lg:grid-cols-3">
+              <QuotaCard total={4000} used={3135} available={865} />
+              
+              {/* Quick Actions Card */}
+              <div className="lg:col-span-2 rounded-lg border border-border bg-card p-6">
+                <h3 className="text-lg font-medium text-card-foreground mb-4">
+                  Actividad Reciente
+                </h3>
+                <div className="space-y-4">
+                  {[
+                    {
+                      action: "Usuario creado",
+                      user: "Laura Sánchez Vega",
+                      time: "Hace 2 horas",
+                    },
+                    {
+                      action: "Estado actualizado",
+                      user: "Ana María Hernández",
+                      time: "Hace 5 horas",
+                    },
+                    {
+                      action: "Permisos modificados",
+                      user: "Carlos López Fernández",
+                      time: "Hace 1 día",
+                    },
+                    {
+                      action: "Usuario importado",
+                      user: "José Antonio Martínez",
+                      time: "Hace 2 días",
+                    },
+                  ].map((activity, index) => (
+                    <div
+                      key={index}
+                      className="flex items-center justify-between border-b border-border pb-3 last:border-0 last:pb-0"
+                    >
+                      <div>
+                        <p className="text-sm font-medium text-card-foreground">
+                          {activity.action}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          {activity.user}
+                        </p>
+                      </div>
+                      <span className="text-xs text-muted-foreground">
+                        {activity.time}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {/* Users Table */}
+            <div>
+              <h2 className="mb-4 text-lg font-semibold text-foreground">
+                Lista de Usuarios
+              </h2>
+              <UsersTable
+                users={sampleUsers}
+                onEdit={handleEdit}
+                onDelete={handleDelete}
+                onManage={handleManage}
+                onExport={handleExport}
+              />
+            </div>
+          </div>
+        </main>
+      </div>
     </div>
-  );
+  )
 }
