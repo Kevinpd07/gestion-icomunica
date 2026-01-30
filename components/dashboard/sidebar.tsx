@@ -1,9 +1,9 @@
-"use client"
+"use client";
 
-import React from "react"
+import React, { useEffect } from "react";
 
-import { useState } from "react"
-import { cn } from "@/lib/utils"
+import { useState } from "react";
+import { cn } from "@/lib/utils";
 import {
   MessageSquare,
   Users,
@@ -15,21 +15,29 @@ import {
   LogOut,
   Menu,
   X,
-} from "lucide-react"
-import { Button } from "@/components/ui/button"
+} from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { logoutAction } from "@/actions/auth";
+import { getCurrentUser } from "@/actions/auth";
 
 interface SidebarProps {
-  className?: string
-  onMobileClose?: () => void
-  isMobileOpen?: boolean
+  className?: string;
+  onMobileClose?: () => void;
+  isMobileOpen?: boolean;
 }
 
 interface NavItem {
-  label: string
-  icon: React.ReactNode
-  href?: string
-  active?: boolean
-  children?: { label: string; href: string; active?: boolean }[]
+  label: string;
+  icon: React.ReactNode;
+  href?: string;
+  active?: boolean;
+  children?: { label: string; href: string; active?: boolean }[];
+}
+
+interface User {
+  email: string;
+  role: string;
+  username: string;
 }
 
 const navItems: NavItem[] = [
@@ -63,18 +71,41 @@ const navItems: NavItem[] = [
     icon: <Settings className="h-4 w-4" />,
     href: "#",
   },
-]
+];
 
-export function Sidebar({ className, onMobileClose, isMobileOpen }: SidebarProps) {
-  const [expandedItems, setExpandedItems] = useState<string[]>(["InfoComunica"])
+function getInitialsFromString(name?: string) {
+  if (!name) return "AD";
+  const raw = name.includes("@") ? name.split("@")[0] : name;
+  const parts = raw.split(/[\s._-]+/).filter(Boolean);
+  if (parts.length === 0) return "AD";
+  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+  return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+}
+
+export function Sidebar({
+  className,
+  onMobileClose,
+  isMobileOpen,
+}: SidebarProps) {
+  const [expandedItems, setExpandedItems] = useState<string[]>([
+    "InfoComunica",
+  ]);
 
   const toggleExpand = (label: string) => {
     setExpandedItems((prev) =>
       prev.includes(label)
         ? prev.filter((item) => item !== label)
-        : [...prev, label]
-    )
-  }
+        : [...prev, label],
+    );
+  };
+
+  const [user, setUser] = useState<User | null>(null);
+
+  useEffect(() => {
+    getCurrentUser().then((currentUser) => {
+      setUser(currentUser);
+    });
+  }, []);
 
   return (
     <>
@@ -90,7 +121,7 @@ export function Sidebar({ className, onMobileClose, isMobileOpen }: SidebarProps
         className={cn(
           "fixed left-0 top-0 z-50 flex h-screen w-64 flex-col bg-sidebar border-r border-sidebar-border transition-transform duration-300 lg:translate-x-0",
           isMobileOpen ? "translate-x-0" : "-translate-x-full",
-          className
+          className,
         )}
       >
         {/* Header */}
@@ -120,14 +151,18 @@ export function Sidebar({ className, onMobileClose, isMobileOpen }: SidebarProps
         <div className="border-b border-sidebar-border p-4">
           <div className="flex items-center gap-3">
             <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/20 text-primary">
-              <span className="text-sm font-medium">AD</span>
+              <span className="text-sm font-medium">
+                {getInitialsFromString(
+                  user?.username ?? user?.email ?? "Administrador",
+                )}
+              </span>
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium text-sidebar-foreground truncate">
-                Administrador
+              <p className="text-sm font-medium text-sidebar-foreground truncate uppercase">
+                {user?.username || "Administrador"}
               </p>
               <p className="text-xs text-muted-foreground truncate">
-                admin@infocomunica.cu
+                {user?.role}:{user?.email}
               </p>
             </div>
           </div>
@@ -151,7 +186,7 @@ export function Sidebar({ className, onMobileClose, isMobileOpen }: SidebarProps
                         "flex w-full items-center justify-between rounded-lg px-3 py-2.5 text-sm transition-colors",
                         item.active
                           ? "bg-sidebar-accent text-primary"
-                          : "text-sidebar-foreground hover:bg-sidebar-accent"
+                          : "text-sidebar-foreground hover:bg-sidebar-accent",
                       )}
                     >
                       <span className="flex items-center gap-3">
@@ -174,7 +209,7 @@ export function Sidebar({ className, onMobileClose, isMobileOpen }: SidebarProps
                                 "block rounded-lg px-3 py-2 text-sm transition-colors",
                                 child.active
                                   ? "bg-primary/10 text-primary"
-                                  : "text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-foreground"
+                                  : "text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-foreground",
                               )}
                             >
                               {child.label}
@@ -191,7 +226,7 @@ export function Sidebar({ className, onMobileClose, isMobileOpen }: SidebarProps
                       "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition-colors",
                       item.active
                         ? "bg-sidebar-accent text-primary"
-                        : "text-sidebar-foreground hover:bg-sidebar-accent"
+                        : "text-sidebar-foreground hover:bg-sidebar-accent",
                     )}
                   >
                     {item.icon}
@@ -205,26 +240,26 @@ export function Sidebar({ className, onMobileClose, isMobileOpen }: SidebarProps
 
         {/* Footer */}
         <div className="border-t border-sidebar-border p-3">
-          <button className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm text-muted-foreground transition-colors hover:bg-sidebar-accent hover:text-sidebar-foreground">
-            <LogOut className="h-4 w-4" />
-            Cerrar Sesión
-          </button>
+          <form action={logoutAction}>
+            <button
+              type="submit"
+              className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm text-muted-foreground transition-colors hover:bg-sidebar-accent hover:text-sidebar-foreground"
+            >
+              <LogOut className="h-4 w-4" />
+              Cerrar Sesión
+            </button>
+          </form>
         </div>
       </aside>
     </>
-  )
+  );
 }
 
 export function SidebarTrigger({ onClick }: { onClick: () => void }) {
   return (
-    <Button
-      variant="ghost"
-      size="icon"
-      className="lg:hidden"
-      onClick={onClick}
-    >
+    <Button variant="ghost" size="icon" className="lg:hidden" onClick={onClick}>
       <Menu className="h-5 w-5" />
       <span className="sr-only">Abrir menú</span>
     </Button>
-  )
+  );
 }

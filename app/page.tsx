@@ -1,11 +1,16 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import { Sidebar } from "@/components/dashboard/sidebar"
-import { Header } from "@/components/dashboard/header"
-import { QuotaCard } from "@/components/dashboard/quota-card"
-import { UsersTable, type User } from "@/components/dashboard/users-table"
-import { StatsCards } from "@/components/dashboard/stats-cards"
+import { useState, useEffect, use } from "react";
+import { Sidebar } from "@/components/dashboard/sidebar";
+import { Header } from "@/components/dashboard/header";
+import { QuotaCard } from "@/components/dashboard/quota-card";
+import { UsersTable, type User } from "@/components/dashboard/users-table";
+import { StatsCards } from "@/components/dashboard/stats-cards";
+
+import { getCurrentUser } from "@/actions/auth";
+import { logoutAction } from "@/actions/auth";
+import { get } from "http";
+import { useRouter } from "next/navigation";
 
 // Sample data
 const sampleUsers: User[] = [
@@ -93,32 +98,53 @@ const sampleUsers: User[] = [
     organismo: "MINCEX",
     estado: "ACTIVO",
   },
-]
+];
 
 export default function DashboardPage() {
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
+  const [user, setUser] = useState(null);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const router = useRouter();
+
+  useEffect(() => {
+    getCurrentUser().then((currentUser) => {
+      setUser(currentUser);
+      setLoading(false);
+    });
+  }, []);
+
+  useEffect(() => {
+    if (!loading && !user) {
+      router.push("/login");
+    }
+  }, [loading, user, router]);
+
+  if (loading) return <div>Cargando...</div>;
+  if (!user) return null; // Redirigiendo al login
 
   const handleEdit = (user: User) => {
-    console.log("[v0] Edit user:", user)
-  }
+    console.log("[v0] Edit user:", user);
+  };
 
   const handleDelete = (user: User) => {
-    console.log("[v0] Delete user:", user)
-  }
+    console.log("[v0] Delete user:", user);
+  };
 
   const handleManage = (user: User) => {
-    console.log("[v0] Manage user:", user)
-  }
+    console.log("[v0] Manage user:", user);
+  };
 
   const handleExport = (user: User) => {
-    console.log("[v0] Export user:", user)
-  }
+    console.log("[v0] Export user:", user);
+  };
 
   // Calculate stats
-  const totalUsers = sampleUsers.length
-  const activeUsers = sampleUsers.filter((u) => u.estado === "ACTIVO").length
-  const inactiveUsers = sampleUsers.filter((u) => u.estado === "INACTIVO").length
-  const organismos = [...new Set(sampleUsers.map((u) => u.organismo))].length
+  const totalUsers = sampleUsers.length;
+  const activeUsers = sampleUsers.filter((u) => u.estado === "ACTIVO").length;
+  const inactiveUsers = sampleUsers.filter(
+    (u) => u.estado === "INACTIVO",
+  ).length;
+  const organismos = [...new Set(sampleUsers.map((u) => u.organismo))].length;
 
   return (
     <div className="min-h-screen bg-background">
@@ -147,7 +173,7 @@ export default function DashboardPage() {
             {/* Quota Card */}
             <div className="grid gap-6 lg:grid-cols-3">
               <QuotaCard total={4000} used={3135} available={865} />
-              
+
               {/* Quick Actions Card */}
               <div className="lg:col-span-2 rounded-lg border border-border bg-card p-6">
                 <h3 className="text-lg font-medium text-card-foreground mb-4">
@@ -214,5 +240,5 @@ export default function DashboardPage() {
         </main>
       </div>
     </div>
-  )
+  );
 }
