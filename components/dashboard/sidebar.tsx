@@ -15,6 +15,7 @@ import {
   LogOut,
   Menu,
   X,
+  Link2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { logoutAction } from "@/actions/auth";
@@ -54,11 +55,17 @@ const navItems: NavItem[] = [
       { label: "Gestión de Usuarios", href: "#", active: true },
       { label: "Organismos", href: "#" },
       { label: "Estadísticas", href: "#" },
+      { label: "Uniones", href: "#" },
     ],
   },
   {
     label: "Usuarios",
     icon: <Users className="h-4 w-4" />,
+    href: "#",
+  },
+  {
+    label: "Uniones",
+    icon: <Link2 className="h-4 w-4" />,
     href: "#",
   },
   {

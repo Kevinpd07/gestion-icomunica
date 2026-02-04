@@ -1,111 +1,27 @@
 "use client";
 
-import { useState, useEffect, use } from "react";
+import { useState, useEffect } from "react";
 import { Sidebar } from "@/components/dashboard/sidebar";
 import { Header } from "@/components/dashboard/header";
 import { QuotaCard } from "@/components/dashboard/quota-card";
 import { UsersTable, type User } from "@/components/dashboard/users-table";
 import { StatsCards } from "@/components/dashboard/stats-cards";
-
-import { getCurrentUser } from "@/actions/auth";
-import { logoutAction } from "@/actions/auth";
-import { get } from "http";
+import { getCurrentUser, getUsers } from "@/actions/auth";
 import { useRouter } from "next/navigation";
-
-// Sample data
-const sampleUsers: User[] = [
-  {
-    id: 2,
-    nombre: "Jorge García Pérez",
-    usuario: "jorge",
-    organismo: "CECM",
-    estado: "ACTIVO",
-  },
-  {
-    id: 3,
-    nombre: "Miguel Díaz-Canel Bermúdez",
-    usuario: "midica",
-    organismo: "Presidencia",
-    estado: "ACTIVO",
-  },
-  {
-    id: 4,
-    nombre: "Manuel Marrero Cruz",
-    usuario: "mmarrero",
-    organismo: "CECM",
-    estado: "ACTIVO",
-  },
-  {
-    id: 6,
-    nombre: "Salvador Valdés Mesa",
-    usuario: "salvador",
-    organismo: "CECM",
-    estado: "ACTIVO",
-  },
-  {
-    id: 7,
-    nombre: "Roberto Morales Ojeda",
-    usuario: "rmorales",
-    organismo: "ANPP",
-    estado: "ACTIVO",
-  },
-  {
-    id: 8,
-    nombre: "Ana María Hernández",
-    usuario: "ahernandez",
-    organismo: "MINCOM",
-    estado: "INACTIVO",
-  },
-  {
-    id: 9,
-    nombre: "Carlos López Fernández",
-    usuario: "clopez",
-    organismo: "MINREX",
-    estado: "ACTIVO",
-  },
-  {
-    id: 10,
-    nombre: "María Elena Rodríguez",
-    usuario: "mrodriguez",
-    organismo: "MINSAP",
-    estado: "PENDIENTE",
-  },
-  {
-    id: 11,
-    nombre: "José Antonio Martínez",
-    usuario: "jmartinez",
-    organismo: "MINED",
-    estado: "ACTIVO",
-  },
-  {
-    id: 12,
-    nombre: "Laura Sánchez Vega",
-    usuario: "lsanchez",
-    organismo: "CITMA",
-    estado: "ACTIVO",
-  },
-  {
-    id: 13,
-    nombre: "Pedro González Ruiz",
-    usuario: "pgonzalez",
-    organismo: "MINAG",
-    estado: "INACTIVO",
-  },
-  {
-    id: 14,
-    nombre: "Carmen Torres Díaz",
-    usuario: "ctorres",
-    organismo: "MINCEX",
-    estado: "ACTIVO",
-  },
-];
+import { Button } from "@/components/ui/button";
+import { AlertCircle, Loader2, RefreshCw } from "lucide-react";
 
 export default function DashboardPage() {
-  const [user, setUser] = useState(null);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [users, setUsers] = useState<User[]>([]);
+  const [totalUsers, setTotalUsers] = useState(0);
+  const [isLoadingUsers, setIsLoadingUsers] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const router = useRouter();
 
+  // Verificar autenticación
   useEffect(() => {
     getCurrentUser().then((currentUser) => {
       setUser(currentUser);
@@ -119,32 +35,60 @@ export default function DashboardPage() {
     }
   }, [loading, user, router]);
 
-  if (loading) return <div>Cargando...</div>;
-  if (!user) return null; // Redirigiendo al login
+  // Cargar usuarios iniciales
+  useEffect(() => {
+    if (user) {
+      loadUsersData();
+    }
+  }, [user]);
 
-  const handleEdit = (user: User) => {
-    console.log("[v0] Edit user:", user);
+  const loadUsersData = async () => {
+    setIsLoadingUsers(true);
+    setError(null);
+
+    try {
+      const result = await getUsers(1000, 1); // Cargar todos para las stats
+
+      if (result.success && result.data) {
+        const mappedUsers = result.data.data || [];
+        setUsers(
+          mappedUsers.map((strapiUser: any) => ({
+            id: strapiUser.pcu_id_username,
+            nombre:
+              `${(strapiUser.pcu_name || "").trim()} ${(strapiUser.pcu_surnames || "").trim()}`.trim(),
+            usuario: strapiUser.pcu_icomunica_user || "",
+            provincia: strapiUser.pcu_province_residence || "",
+            cargo: strapiUser.pcu_employment_position || "",
+            organismo: strapiUser.pcu_work_name || "",
+            organismoAcronimo: strapiUser.pcu_work_acronym || "",
+            estado: "ACTIVO" as const,
+          })),
+        );
+      } else {
+        setError(result.error || "Error al cargar usuarios");
+      }
+    } catch (err) {
+      console.error("Error cargando usuarios:", err);
+      setError("Error inesperado al cargar usuarios");
+    } finally {
+      setIsLoadingUsers(false);
+    }
   };
 
-  const handleDelete = (user: User) => {
-    console.log("[v0] Delete user:", user);
-  };
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
 
-  const handleManage = (user: User) => {
-    console.log("[v0] Manage user:", user);
-  };
-
-  const handleExport = (user: User) => {
-    console.log("[v0] Export user:", user);
-  };
+  if (!user) return null;
 
   // Calculate stats
-  const totalUsers = sampleUsers.length;
-  const activeUsers = sampleUsers.filter((u) => u.estado === "ACTIVO").length;
-  const inactiveUsers = sampleUsers.filter(
-    (u) => u.estado === "INACTIVO",
-  ).length;
-  const organismos = [...new Set(sampleUsers.map((u) => u.organismo))].length;
+  const activeUsers = users.filter((u) => u.estado === "ACTIVO").length;
+  const inactiveUsers = users.filter((u) => u.estado === "INACTIVO").length;
+  const organismos = [...new Set(users.map((u) => u.organismo))].length;
 
   return (
     <div className="min-h-screen bg-background">
@@ -164,7 +108,7 @@ export default function DashboardPage() {
           <div className="mx-auto max-w-7xl space-y-6">
             {/* Stats Overview */}
             <StatsCards
-              totalUsers={totalUsers}
+              totalUsers={totalUsers || users.length}
               activeUsers={activeUsers}
               inactiveUsers={inactiveUsers}
               totalOrganismos={organismos}
@@ -172,7 +116,11 @@ export default function DashboardPage() {
 
             {/* Quota Card */}
             <div className="grid gap-6 lg:grid-cols-3">
-              <QuotaCard total={4000} used={3135} available={865} />
+              <QuotaCard
+                total={4000}
+                used={totalUsers || users.length}
+                available={4000 - (totalUsers || users.length)}
+              />
 
               {/* Quick Actions Card */}
               <div className="lg:col-span-2 rounded-lg border border-border bg-card p-6">
@@ -180,61 +128,82 @@ export default function DashboardPage() {
                   Actividad Reciente
                 </h3>
                 <div className="space-y-4">
-                  {[
-                    {
-                      action: "Usuario creado",
-                      user: "Laura Sánchez Vega",
-                      time: "Hace 2 horas",
-                    },
-                    {
-                      action: "Estado actualizado",
-                      user: "Ana María Hernández",
-                      time: "Hace 5 horas",
-                    },
-                    {
-                      action: "Permisos modificados",
-                      user: "Carlos López Fernández",
-                      time: "Hace 1 día",
-                    },
-                    {
-                      action: "Usuario importado",
-                      user: "José Antonio Martínez",
-                      time: "Hace 2 días",
-                    },
-                  ].map((activity, index) => (
+                  {users.slice(0, 4).map((user) => (
                     <div
-                      key={index}
+                      key={user.id}
                       className="flex items-center justify-between border-b border-border pb-3 last:border-0 last:pb-0"
                     >
                       <div>
                         <p className="text-sm font-medium text-card-foreground">
-                          {activity.action}
+                          Usuario registrado
                         </p>
                         <p className="text-xs text-muted-foreground">
-                          {activity.user}
+                          {user.nombre}
                         </p>
                       </div>
                       <span className="text-xs text-muted-foreground">
-                        {activity.time}
+                        {user.organismoAcronimo}
                       </span>
                     </div>
                   ))}
+                  {users.length === 0 && !isLoadingUsers && !error && (
+                    <p className="text-sm text-muted-foreground text-center py-4">
+                      No hay actividad reciente
+                    </p>
+                  )}
                 </div>
               </div>
             </div>
 
             {/* Users Table */}
             <div>
-              <h2 className="mb-4 text-lg font-semibold text-foreground">
-                Lista de Usuarios
-              </h2>
-              <UsersTable
-                users={sampleUsers}
-                onEdit={handleEdit}
-                onDelete={handleDelete}
-                onManage={handleManage}
-                onExport={handleExport}
-              />
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-lg font-semibold text-foreground">
+                  Lista de Usuarios
+                </h2>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={loadUsersData}
+                  disabled={isLoadingUsers}
+                  className="bg-transparent"
+                >
+                  <RefreshCw
+                    className={`h-4 w-4 mr-2 ${isLoadingUsers ? "animate-spin" : ""}`}
+                  />
+                  Actualizar
+                </Button>
+              </div>
+
+              {/* Error State */}
+              {error && (
+                <div className="flex flex-col items-center justify-center py-12 rounded-lg border border-destructive/30 bg-destructive/10">
+                  <AlertCircle className="h-8 w-8 text-destructive mb-4" />
+                  <p className="text-destructive font-medium mb-2">
+                    Error al cargar los datos
+                  </p>
+                  <p className="text-muted-foreground text-sm mb-4">{error}</p>
+                  <Button
+                    variant="outline"
+                    onClick={loadUsersData}
+                    className="bg-transparent"
+                  >
+                    <RefreshCw className="h-4 w-4 mr-2" />
+                    Reintentar
+                  </Button>
+                </div>
+              )}
+
+              {/* Table - Siempre mostrar */}
+              {!error && (
+                <UsersTable
+                  onEdit={(user) => console.log("Edit", user)}
+                  onDelete={(user) => console.log("Delete", user)}
+                  onManage={(user) => console.log("Manage", user)}
+                  onExport={(user) => console.log("Export", user)}
+                  onTotalChange={(total) => setTotalUsers(total)}
+                />
+              )}
             </div>
           </div>
         </main>
